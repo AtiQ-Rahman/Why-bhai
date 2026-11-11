@@ -53,7 +53,7 @@ async function applyRules(settings, passes, research) {
   rule(1, toGate, { regexFilter: "^(https?://.*)$", resourceTypes: ["main_frame"] });
   if (W.researchOn(research)) {
     rule(2, { type: "allow" }, { regexFilter: "^https?://", resourceTypes: ["main_frame"] });
-    for (const d of settings.researchBlock) {
+    for (const d of settings.distracting) {
       rule(3, toGate, { regexFilter: `^(https?://([a-z0-9-]+\\.)*${esc(d)}(:[0-9]+)?([/?#].*)?)$`, resourceTypes: ["main_frame"] });
     }
   }
@@ -238,9 +238,9 @@ function gateBegin({ url }) {
     const { settings, passes, research } = await getState();
     if (W.routeUrl(url, settings, passes, research) === "open") return { ok: true, open: true };
     const { gates, recent } = await chrome.storage.local.get(["gates", "recent"]);
-    const breaths = W.breathsFor(settings.breaths, recent?.[site]);
+    const breaths = W.breathsFor(settings.breaths, recent?.[site], W.isDistracting(site, settings));
     await chrome.storage.local.set({ gates: { ...(gates ?? {}), [site]: { at: Date.now(), breaths } } });
-    const opensThisHour = (recent?.[site] ?? []).filter((t) => Date.now() - t < 60 * MIN).length;
+    const opensThisHour = W.isDistracting(site, settings) ? (recent?.[site] ?? []).filter((t) => Date.now() - t < 60 * MIN).length : 0;
     return { ok: true, site, breaths, extra: settings.breaths, opensThisHour };
   });
 }
@@ -334,7 +334,8 @@ function saveSettings(patch, reset = false) {
       sound: !!raw.sound,
       volume: clamp(raw.volume, 0, 100, d.volume),
       showPill: !!raw.showPill,
-      researchBlock: [...new Set((Array.isArray(raw.researchBlock) ? raw.researchBlock : d.researchBlock).map(W.normalizeDomain).filter(Boolean))],
+      // (older versions called this list researchBlock)
+      distracting: [...new Set((Array.isArray(raw.distracting) ? raw.distracting : Array.isArray(raw.researchBlock) ? raw.researchBlock : d.distracting).map(W.normalizeDomain).filter(Boolean))],
     };
     await chrome.storage.local.set({ settings });
     if (reset) await chrome.storage.local.remove("pill");

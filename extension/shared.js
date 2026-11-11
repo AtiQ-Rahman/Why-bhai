@@ -25,8 +25,8 @@
     sound: true,
     volume: 40,
     showPill: true,
-    // Sites that still need the gate during research mode.
-    researchBlock: ["youtube.com", "facebook.com"],
+    // Distracting sites: opening them often adds breaths, and research mode doesn't open them.
+    distracting: ["youtube.com", "facebook.com", "instagram.com"],
   };
 
   const BREATH_IN_S = 4;
@@ -74,8 +74,13 @@
 
   const researchOn = (research, now = Date.now()) => !!research && research.until > now;
 
-  // Breaths needed before the reason, given how often this site was opened in the last hour.
-  function breathsFor(base, recentOpens, now = Date.now()) {
+  const isDistracting = (host, settings) =>
+    (settings?.distracting ?? []).some((d) => hostMatches(String(host).toLowerCase(), d));
+
+  // Breaths needed before the reason. Distracting sites get one more set for each
+  // open past the third in the last hour; every other site always gets the base.
+  function breathsFor(base, recentOpens, distracting = true, now = Date.now()) {
+    if (!distracting) return base;
     const n = (recentOpens ?? []).filter((t) => now - t < REPEAT_WINDOW).length;
     return base * (1 + Math.max(0, n - (REPEAT_FREE - 1)));
   }
@@ -93,7 +98,7 @@
     if ((settings?.allowlist ?? []).some((d) => hostMatches(host, d))) return "open";
     const p = passes?.[siteOf(host)];
     if (p && p.until > now) return "open";
-    if (researchOn(research, now) && !(settings?.researchBlock ?? []).some((d) => hostMatches(host, d))) return "open";
+    if (researchOn(research, now) && !isDistracting(host, settings)) return "open";
     return "gate";
   }
 
@@ -134,6 +139,7 @@
     routeUrl,
     researchOn,
     breathsFor,
+    isDistracting,
     reasonOf,
     fmt,
     fmtMin,

@@ -21,11 +21,11 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 Several sites can be open at once, each with its own timer. The clock ticks for the tab you're looking at.
 
 - **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
-- **Again and again?** Opening the same site more than 3 times in an hour adds one more set of breaths each time.
+- **Again and again?** Opening a *distracting site* (YouTube, Facebook, Instagram by default) more than 3 times in an hour adds one more set of breaths each time. Work sites like GitHub always get the normal breaths.
 
 ## 🔬 Research mode
 For when you need to follow links everywhere: from the popup, breathe once, write the topic, and pick 15, 30, 45 or 60 minutes.
-Every link opens freely (no black & white, no ticking) — except **YouTube and Facebook**, which still ask why (edit the list in settings).
+Every link opens freely (no black & white, no ticking) — except the *distracting sites* (YouTube, Facebook, Instagram), which still ask why. Edit that list in settings.
 When the time is up, everything closes again. Press **✓ Done researching** to end it early (back to the new tab page).
 
 ## Also

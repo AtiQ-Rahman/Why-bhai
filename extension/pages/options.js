@@ -15,7 +15,7 @@ function render() {
   for (const k of CHECKS) $(k).checked = !!settings[k];
   $("breath-time").textContent = `About ${settings.breaths * W.BREATH_S} seconds: in for ${W.BREATH_IN_S}, out for ${W.BREATH_OUT_S}.`;
   chips("allow", "allowlist");
-  chips("rb", "researchBlock");
+  chips("rb", "distracting");
 }
 
 function chips(el, key) {
@@ -66,7 +66,7 @@ $("rb-form").addEventListener("submit", (e) => {
   const d = W.normalizeDomain($("rb-input").value);
   if (!d) return;
   $("rb-input").value = "";
-  if (!settings.researchBlock.includes(d)) save({ researchBlock: [...settings.researchBlock, d] });
+  if (!settings.distracting.includes(d)) save({ distracting: [...settings.distracting, d] });
 });
 $("reset").addEventListener("click", async () => {
   if (!confirm("Reset all Why Bhai? settings to the defaults? Stats are kept.")) return;

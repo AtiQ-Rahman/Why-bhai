@@ -61,7 +61,7 @@ $("end").addEventListener("click", async () => {
 async function init() {
   const { research, settings } = await chrome.storage.local.get(["research", "settings"]);
   if (W.researchOn(research)) return showRunning(research);
-  const block = ({ ...W.DEFAULT_SETTINGS, ...settings }).researchBlock;
+  const block = ({ ...W.DEFAULT_SETTINGS, ...settings }).distracting;
   $("intro").textContent = block.length
     ? `Every link opens freely for a while — except ${block.join(", ")}, which still ask why.`
     : "Every link opens freely for a while.";

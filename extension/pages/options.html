@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings — Why Bhai?</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    main.wrap { max-width: 680px; display: flex; flex-direction: column; gap: 16px; }
+    .card h2 { margin-bottom: 4px; }
+    .card > p { margin: 0 0 14px; }
+    label.f { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; max-width: 220px; }
+    .check { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
+    .check input { margin-top: 4px; width: 16px; height: 16px; accent-color: var(--accent); }
+    .check small { display: block; color: var(--muted); font-weight: 400; }
+    .add { display: flex; gap: 8px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: 14px; }
+    .chip button { padding: 0 7px; border: 0; background: transparent; font-size: 16px; line-height: 1.4; color: var(--muted); }
+    .chip button:hover { color: var(--danger); }
+    #saved { position: fixed; bottom: 16px; right: 16px; background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .2s; }
+    #saved.show { opacity: 1; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <span class="brand"><img src="../icons/icon32.png" alt="">Why Bhai?</span>
+    <nav><a href="stats.html">Stats</a><a href="options.html" class="active">Settings</a></nav>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>How it works</h2>
+      <p class="muted">Every website starts closed. To open one: breathe, say why, and pick how long (2–30 min). The site opens in black &amp; white with a ticking clock, then closes again when the time is up. Several sites can be open at once, each with its own timer.</p>
+    </section>
+
+    <section class="card">
+      <h2>Always open</h2>
+      <p class="muted small">These sites never ask (subdomains included: <b>python.org</b> also opens docs.python.org).</p>
+      <form class="add" id="add-form">
+        <input type="text" id="add-input" placeholder="e.g. stackoverflow.com" autocomplete="off">
+        <button class="primary" type="submit">Add</button>
+      </form>
+      <p class="error" id="add-err" hidden></p>
+      <div class="chips" id="allow"></div>
+    </section>
+
+    <section class="card">
+      <h2>🔬 Research mode</h2>
+      <p class="muted small">Start it from the popup: one set of breaths, a topic, and 15–60 minutes when every link opens freely. These sites still ask why, even during research:</p>
+      <form class="add" id="rb-form">
+        <input type="text" id="rb-input" placeholder="e.g. instagram.com" autocomplete="off">
+        <button class="primary" type="submit">Add</button>
+      </form>
+      <div class="chips" id="rb"></div>
+    </section>
+
+    <section class="card">
+      <h2>Before a site opens</h2>
+      <label class="f">Breaths each time<input type="number" id="breaths" min="1" max="10"></label>
+      <p class="muted small">Opening the same site more than 3 times in an hour adds one more set each time. Picking “🫠 Just bored” adds one more set too.</p>
+      <p class="muted small" id="breath-time"></p>
+    </section>
+
+    <section class="card">
+      <h2>While a site is open</h2>
+      <label class="check"><input type="checkbox" id="grayscale"><span>Black &amp; white<small>The page loses its color, so it's less tempting.</small></span></label>
+      <label class="check"><input type="checkbox" id="showPill"><span>Floating timer<small>Shows your reason and the time left. Drag it anywhere.</small></span></label>
+      <label class="check"><input type="checkbox" id="sound"><span>Sounds<small>Tick-tock while the site is open, a beep when time's up, and the breathing sound.</small></span></label>
+      <label class="f" style="max-width:none">Volume<input type="range" id="volume" min="0" max="100" step="5"></label>
+    </section>
+
+    <section class="card">
+      <h2>Reset</h2>
+      <p class="muted small">Put every setting back to how it was at install. Stats and open sites stay.</p>
+      <button id="reset">↺ Back to default settings</button>
+    </section>
+
+    <p class="muted small">Heads-up: Chrome doesn't let extensions block <code>chrome://</code> pages. Allow it in Incognito too (Details → Allow in Incognito), or Incognito windows stay open.</p>
+  </main>
+  <div id="saved">Saved ✓</div>
+
+  <script src="../shared.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

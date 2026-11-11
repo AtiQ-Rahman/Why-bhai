@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stats — Why Bhai?</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    main.wrap { max-width: 760px; display: flex; flex-direction: column; gap: 16px; }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .tile { padding: 16px 18px; }
+    .tile .k { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .tile .v { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px; white-space: nowrap; }
+    .tile .s { font-size: 13px; color: var(--muted); }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
+    .item .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item .val { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .item .track { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--bar-track); overflow: hidden; }
+    .item .fill { height: 100%; background: var(--bar); border-radius: 999px; }
+    .empty { color: var(--muted); font-size: 14px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <span class="brand"><img src="../icons/icon32.png" alt="">Why Bhai?</span>
+    <nav><a href="stats.html" class="active">Stats</a><a href="options.html">Settings</a></nav>
+  </header>
+  <main class="wrap">
+    <div class="tiles">
+      <div class="card tile"><div class="k">Today</div><div class="v num" id="today"></div><div class="s" id="today-s"></div></div>
+      <div class="card tile"><div class="k">Last 7 days</div><div class="v num" id="week"></div><div class="s" id="week-s"></div></div>
+      <div class="card tile"><div class="k">All time</div><div class="v num" id="total"></div><div class="s" id="total-s"></div></div>
+      <div class="card tile"><div class="k">🔬 Research</div><div class="v num" id="research"></div><div class="s" id="research-s"></div></div>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2>Where the time went</h2><p class="muted small" style="margin:2px 0 0">Minutes per site, last 7 days</p><div class="list" id="sites"></div></section>
+      <section class="card"><h2>Why you opened them</h2><p class="muted small" style="margin:2px 0 0">Reasons picked, last 7 days</p><div class="list" id="reasons"></div></section>
+    </div>
+    <div class="grid2">
+      <section class="card"><h2>Did it work?</h2><p class="muted small" style="margin:2px 0 0">“Got what I came for”, per reason, last 7 days</p><div class="list" id="worked"></div></section>
+      <section class="card"><h2>Research topics</h2><p class="muted small" style="margin:2px 0 0">Minutes, last 7 days</p><div class="list" id="topics"></div></section>
+    </div>
+    <p class="muted small">Time counts from when a site opened until its timer ended or you closed it.</p>
+  </main>
+  <script src="../shared.js"></script>
+  <script src="stats.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research mode — Why Bhai?</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+    main { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+    h1 { font-size: 30px; }
+    p { margin: 0; }
+    .step { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .q { font-size: 18px; font-weight: 800; }
+    #topic { max-width: 380px; text-align: center; }
+    .mins { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .mins button { min-width: 72px; padding: 12px 10px; font-size: 18px; font-weight: 800; flex-direction: column; gap: 0; }
+    .mins button small { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .breath-sub { color: var(--muted); font-size: 13px; }
+    .big { font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <main>
+    <div style="font-size:48px">🔬</div>
+    <h1 id="title">Research mode</h1>
+    <p class="muted" id="intro"></p>
+
+    <div class="breath-box" id="breath-box" hidden>
+      <div class="breath" aria-hidden="true">
+        <div class="breath-ring"></div>
+        <div class="breath-ball" id="ball"></div>
+        <div class="breath-count num" id="count"></div>
+      </div>
+      <div class="breath-label" id="label"></div>
+      <div class="breath-sub" id="bsub"></div>
+    </div>
+
+    <div class="step" id="topic-step" hidden>
+      <div class="q">What are you researching?</div>
+      <input type="text" id="topic" maxlength="80" placeholder="e.g. React hooks, flight prices…">
+      <button class="primary" id="topic-next">Next</button>
+    </div>
+
+    <div class="step" id="long" hidden>
+      <div class="q">For how long?</div>
+      <div class="mins" id="mins"></div>
+      <button class="ghost" id="long-back">← Change the topic</button>
+    </div>
+
+    <div class="step" id="running" hidden>
+      <div class="big" id="left"></div>
+      <p id="running-topic"></p>
+      <button id="end">✓ Done researching</button>
+    </div>
+
+    <p class="error" id="err" hidden></p>
+  </main>
+  <script src="../shared.js"></script>
+  <script type="module" src="research.js"></script>
+</body>
+</html>

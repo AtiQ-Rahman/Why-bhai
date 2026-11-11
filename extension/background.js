@@ -73,7 +73,9 @@ async function sweepTabs(settings, passes, research, only = null, param = "") {
     if (!url || !/^https?:/i.test(url)) continue;
     if (only && !only.includes(W.siteOfUrl(url))) continue;
     if (W.routeUrl(url, settings, passes, research) === "open") continue;
-    chrome.tabs.update(t.id, { url: `${GATE_PAGE}${param}#${url}` }).catch(() => {});
+    // Closed on purpose ("Done"): back to the new tab page instead of the gate.
+    const next = param === "home" ? "chrome://newtab/" : `${GATE_PAGE}${param}#${url}`;
+    chrome.tabs.update(t.id, { url: next }).catch(() => {});
   }
 }
 
@@ -187,8 +189,9 @@ function closeDue({ sites = null, endResearch = false } = {}) {
         d.sites[s] = round1((d.sites[s] ?? 0) + m);
         t.m = round1(t.m + m);
       }, end);
-      // Asked on the gate page: "did you get what you came for?"
-      ask[s] = { reason: p.reason, note: p.note, at: now };
+      // Asked on the gate page when time runs out: "did you get what you came for?"
+      if (!sites) ask[s] = { reason: p.reason, note: p.note, at: now };
+      else delete ask[s];
       delete passes[s];
     }
     await chrome.storage.local.set({ feedback: ask });
@@ -206,7 +209,7 @@ function closeDue({ sites = null, endResearch = false } = {}) {
     }
 
     const early = !!sites || endResearch;
-    const param = researchDone ? "?researchdone=1" : early ? "?closed=1" : "?timesup=1";
+    const param = early ? "home" : researchDone ? "?researchdone=1" : "?timesup=1";
     // Research ending can close any tab; a pass ending only closes its own site.
     await commit(passes, next, { only: researchDone ? null : closing, param });
     if (!early) toOffscreen({ type: "offscreen:beep" });

@@ -16,17 +16,17 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 3. **Why?** 💬 Check messages · 🔍 Look up one thing · 📚 Work / study · 📢 Post or reply · 🫠 Just bored · ✏️ Something else (write it).
 4. **How long?** Only the times that fit the reason: 🔍 2–5 min, 💬 2–10, 📢 5–15, 📚 5–30. 🫠 *Just bored* costs one more set of breaths.
 5. **The site opens** (with all its subdomains) in black & white, with a tick-tock clock and a floating timer that shows your reason.
-   Press **✓ Done — close it** any time. When the time is up: a beep, and the site closes again.
+   Press **✓ Done — close it** any time to close it and go back to the new tab page. When the time is up: a beep, and the site closes again.
 
 Several sites can be open at once, each with its own timer. The clock ticks for the tab you're looking at.
 
-- **Did it work?** When a site closes, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
+- **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
 - **Again and again?** Opening the same site more than 3 times in an hour adds one more set of breaths each time.
 
 ## 🔬 Research mode
 For when you need to follow links everywhere: from the popup, breathe once, write the topic, and pick 15, 30, 45 or 60 minutes.
 Every link opens freely (no black & white, no ticking) — except **YouTube and Facebook**, which still ask why (edit the list in settings).
-When the time is up, everything closes again. Press **✓ Done researching** to end it early.
+When the time is up, everything closes again. Press **✓ Done researching** to end it early (back to the new tab page).
 
 ## Also
 - **Popup:** sites open right now with their timers (close any of them), a **black & white** toggle and a **volume** slider (0 = off).

@@ -18,7 +18,9 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 5. **The site opens** (with all its subdomains) in black & white, with a tick-tock clock and a floating timer that shows your reason.
    Press **✓ Done — close it** any time to close it and go back to the new tab page. When the time is up: a beep, and the site closes again.
 
-Several sites can be open at once, each with its own timer. The clock ticks for the tab you're looking at.
+Several sites can be open at once, each with its own timer. A site's timer runs only while it's on screen:
+switch to another tab or minimize the window and it pauses, come back and it picks up where it left off.
+Left paused for 30 minutes, the site closes again.
 
 - **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
 - **Again and again?** Opening a *distracting site* (YouTube, Facebook, Instagram by default) more than 3 times in an hour adds one more set of breaths each time. Work sites like GitHub always get the normal breaths.

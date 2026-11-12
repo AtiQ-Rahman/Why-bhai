@@ -45,8 +45,9 @@ function render() {
         row.innerHTML = `<span class="e"></span><div class="info"><div class="d"></div><div class="r"></div></div><span class="t"></span><button title="Close it now">Close</button>`;
         row.querySelector(".e").textContent = r.emoji;
         row.querySelector(".d").textContent = site;
-        row.querySelector(".r").textContent = p.note || r.label;
+        row.querySelector(".r").textContent = (p.pausedAt ? "⏸ paused · " : "") + (p.note || r.label);
         row.querySelector(".t").dataset.until = p.until;
+        if (p.pausedAt) row.querySelector(".t").dataset.paused = p.pausedAt;
         row.querySelector("button").addEventListener("click", () => chrome.runtime.sendMessage({ type: "pass:close", site }));
         return row;
       }),
@@ -67,7 +68,7 @@ function render() {
 
 function tick() {
   for (const t of document.querySelectorAll(".t[data-until]")) {
-    const left = Number(t.dataset.until) - Date.now();
+    const left = Number(t.dataset.until) - Number(t.dataset.paused || Date.now());
     t.textContent = W.fmt(left);
     t.classList.toggle("last", left <= 60 * 1000);
   }
@@ -93,7 +94,7 @@ $("open-options").addEventListener("click", (e) => {
 
 chrome.storage.onChanged.addListener((_, area) => area === "local" && load());
 setInterval(() => {
-  if (Object.values(passes).some((p) => p.until <= Date.now()) || (research && research.until <= Date.now())) return load();
+  if (Object.values(passes).some((p) => !W.passLive(p)) || (research && research.until <= Date.now())) return load();
   tick();
 }, 500);
 load();

@@ -17,6 +17,8 @@
   // Opening the same site more than this many times in an hour adds a set of breaths each time.
   const REPEAT_FREE = 3;
   const REPEAT_WINDOW = 60 * MIN;
+  // A pass's clock only runs while its site is on screen. Paused longer than this, it closes.
+  const PAUSE_LIMIT = 30 * MIN;
 
   const DEFAULT_SETTINGS = {
     allowlist: ["localhost", "127.0.0.1"],
@@ -67,9 +69,15 @@
 
   const hostMatches = (host, domain) => host === domain || host.endsWith("." + domain);
 
-  // Live passes only.
+  // Time left on a pass; it doesn't go down while the pass is paused (pausedAt set).
+  const passLeft = (p, now = Date.now()) => Math.max(0, p.until - (p.pausedAt ?? now));
+  // When a pass closes: its time runs out, or it sat paused for PAUSE_LIMIT.
+  const passDueAt = (p) => (!p.pausedAt ? p.until : p.until > p.pausedAt ? p.pausedAt + PAUSE_LIMIT : p.pausedAt);
+  const passLive = (p, now = Date.now()) => !!p && passDueAt(p) > now;
+
+  // Live passes only (running or paused).
   function activePasses(passes, now = Date.now()) {
-    return Object.fromEntries(Object.entries(passes ?? {}).filter(([, p]) => p.until > now));
+    return Object.fromEntries(Object.entries(passes ?? {}).filter(([, p]) => passLive(p, now)));
   }
 
   const researchOn = (research, now = Date.now()) => !!research && research.until > now;
@@ -97,7 +105,7 @@
     const host = u.hostname.toLowerCase();
     if ((settings?.allowlist ?? []).some((d) => hostMatches(host, d))) return "open";
     const p = passes?.[siteOf(host)];
-    if (p && p.until > now) return "open";
+    if (passLive(p, now)) return "open";
     if (researchOn(research, now) && !isDistracting(host, settings)) return "open";
     return "gate";
   }
@@ -128,6 +136,7 @@
     MINUTES,
     RESEARCH_MINUTES,
     REPEAT_FREE,
+    PAUSE_LIMIT,
     DEFAULT_SETTINGS,
     BREATH_IN_S,
     BREATH_OUT_S,
@@ -136,6 +145,9 @@
     siteOf,
     siteOfUrl,
     activePasses,
+    passLeft,
+    passDueAt,
+    passLive,
     routeUrl,
     researchOn,
     breathsFor,

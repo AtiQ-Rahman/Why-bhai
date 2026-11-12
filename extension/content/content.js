@@ -161,14 +161,14 @@
   // What this page is open on: its own pass, or research mode (allowlisted pages show nothing).
   function view() {
     const now = Date.now();
-    if (pass && pass.until > now) {
+    if (W.passLive(pass, now)) {
       const r = W.reasonOf(pass.reason);
-      return { kind: "pass", until: pass.until, minutes: pass.minutes, emoji: r.emoji, label: `${r.emoji} ${pass.note || r.label}`,
+      return { kind: "pass", left: W.passLeft(pass, now), minutes: pass.minutes, emoji: r.emoji, label: `${r.emoji} ${pass.note || r.label}`,
         sub: `${site} · ${pass.minutes} min · closes when the timer ends`, done: "✓ Done — close it", gray: settings.grayscale };
     }
     const allowed = settings.allowlist.some((d) => location.hostname === d || location.hostname.endsWith("." + d));
     if (W.researchOn(research, now) && !allowed) {
-      return { kind: "research", until: research.until, minutes: research.minutes, emoji: "🔬", label: `🔬 ${research.topic}`,
+      return { kind: "research", left: research.until - now, minutes: research.minutes, emoji: "🔬", label: `🔬 ${research.topic}`,
         sub: "Research mode · links open until the timer ends", done: "✓ Done researching", gray: false };
     }
     return null;
@@ -177,7 +177,7 @@
   function update() {
     const v = view();
     if (!els || !v) return;
-    const left = Math.max(0, v.until - Date.now());
+    const left = Math.max(0, v.left);
     els.dock.className = ["dock", left <= 60 * 1000 ? "last" : "", pill.min ? "min" : "", open && !pill.min ? "open" : "", settings.showPill ? "" : "nopill"].join(" ");
     els.gray.classList.toggle("on", !!v.gray);
     els.emoji.textContent = v.emoji;
@@ -191,7 +191,7 @@
   function render() {
     if (!view()) {
       // Time ran out but the worker hasn't caught up (alarms can lag): nudge it once.
-      const due = [pass?.until, research?.until].filter((t) => t && t <= Date.now()).sort().pop();
+      const due = [pass && W.passDueAt(pass), research?.until].filter((t) => t && t <= Date.now()).sort().pop();
       if (due && checkedFor !== due) {
         checkedFor = due;
         send({ type: "check" });

@@ -73,9 +73,17 @@ async function sweepTabs(settings, passes, research, only = null, param = "") {
     if (!url || !/^https?:/i.test(url)) continue;
     if (only && !only.includes(W.siteOfUrl(url))) continue;
     if (W.routeUrl(url, settings, passes, research) === "open") continue;
-    // Closed on purpose ("Done"): back to the new tab page instead of the gate.
-    const next = param === "home" ? "chrome://newtab/" : `${GATE_PAGE}${param}#${url}`;
-    chrome.tabs.update(t.id, { url: next }).catch(() => {});
+    if (param === "home") {
+      // Closed on purpose ("Done"): swap in a fresh new tab instead of the gate.
+      // tabs.update to chrome://newtab/ fails with ERR_BLOCKED_BY_CLIENT when another
+      // extension overrides the new tab page; tabs.create() opens whichever NTP the user has.
+      chrome.tabs
+        .create({ windowId: t.windowId, index: t.index, active: t.active })
+        .then(() => chrome.tabs.remove(t.id))
+        .catch(() => {});
+      continue;
+    }
+    chrome.tabs.update(t.id, { url: `${GATE_PAGE}${param}#${url}` }).catch(() => {});
   }
 }
 

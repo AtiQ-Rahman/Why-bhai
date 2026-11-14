@@ -228,7 +228,8 @@ async function commit(passes, research, sweeps = []) {
 
 // Close passes that ran out (or the ones named in `sites`, closed early by the user),
 // and research mode if it ran out (or `endResearch`). A pass left paused too long closes quietly.
-function closeDue({ sites = null, endResearch = false } = {}) {
+// `quiet`: closed for the user (the browser closed), so tabs go to the gate, not a new tab.
+function closeDue({ sites = null, endResearch = false, quiet = false } = {}) {
   return serial(async () => {
     const { passes, research } = await getState();
     const now = Date.now();
@@ -258,7 +259,7 @@ function closeDue({ sites = null, endResearch = false } = {}) {
       else delete ask[s];
     }
     const sweeps = [];
-    if (sites) sweeps.push({ only: tabsOf(closing), param: "home" });
+    if (sites) sweeps.push({ only: tabsOf(closing), param: quiet ? "" : "home" });
     if (timedOut.length) sweeps.push({ only: tabsOf(timedOut), param: "?timesup=1" });
     if (left.length) sweeps.push({ only: tabsOf(left), param: "" });
     for (const s of closing) delete passes[s];
@@ -277,9 +278,9 @@ function closeDue({ sites = null, endResearch = false } = {}) {
     }
 
     // Research ending can close any tab; a pass ending only closes its own sites.
-    if (researchDone) sweeps.unshift({ only: null, param: endResearch ? "home" : "?researchdone=1" });
+    if (researchDone) sweeps.unshift({ only: null, param: endResearch ? (quiet ? "" : "home") : "?researchdone=1" });
     await commit(passes, next, sweeps);
-    if ((researchDone && !endResearch) || timedOut.length) toOffscreen({ type: "offscreen:beep" });
+    if (((researchDone && !endResearch) || timedOut.length) && !quiet) toOffscreen({ type: "offscreen:beep" });
     return { ok: true };
   });
 }
@@ -395,13 +396,23 @@ function followLink(tab) {
   }).then(syncPauses);
 }
 
-function forgetTab(tabId) {
-  return serial(async () => {
+// A tab closed. If it was the last one showing a pass's sites, that pass closes (quietly):
+// closing the tab means you're done with it.
+async function tabClosed(tabId) {
+  const site = await serial(async () => {
     const { tabSites } = await chrome.storage.session.get("tabSites");
-    if (!tabSites || !(tabId in tabSites)) return;
+    if (!tabSites || !(tabId in tabSites)) return null;
+    const s = tabSites[tabId];
     delete tabSites[tabId];
     await chrome.storage.session.set({ tabSites });
+    return s;
   });
+  const hit = site ? W.passFor(await getPasses(), site) : null;
+  if (!hit) return;
+  const sites = W.passSites(...hit);
+  const tabs = await chrome.tabs.query({}).catch(() => null);
+  if (!tabs || tabs.some((t) => t.id !== tabId && sites.includes(W.siteOfUrl(t.url || t.pendingUrl || "")))) return;
+  await closeDue({ sites: [hit[0]], quiet: true });
 }
 
 // ---------- research mode ----------
@@ -489,10 +500,10 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 chrome.alarms.onAlarm.addListener(() => syncPauses().then(() => closeDue()));
 chrome.tabs.onActivated.addListener(() => syncPauses());
 chrome.tabs.onUpdated.addListener((_, info, tab) => info.url && followLink(tab)); // then syncPauses
-chrome.tabs.onRemoved.addListener((tabId) => forgetTab(tabId).then(syncPauses));
+chrome.tabs.onRemoved.addListener((tabId) => tabClosed(tabId).then(syncPauses));
 chrome.tabs.onAttached.addListener(() => syncPauses());
 chrome.windows.onFocusChanged.addListener(() => syncPauses());
-chrome.windows.onRemoved.addListener(() => syncPauses());
+chrome.windows.onRemoved.addListener(() => closeIfBrowserClosed().then(syncPauses));
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   const { settings } = await chrome.storage.local.get("settings");
@@ -506,5 +517,18 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   }
 });
 
-chrome.runtime.onStartup.addListener(reconcile);
+// A new browser session starts with everything closed: passes and research mode from the
+// last one don't carry over.
+async function closeAllPasses() {
+  const sites = Object.keys(await getPasses());
+  const research = await getResearch();
+  if (sites.length || research) await closeDue({ sites, endResearch: !!research, quiet: true });
+}
+// The last window closed (the browser may keep running in the background): same thing.
+async function closeIfBrowserClosed() {
+  const wins = await chrome.windows.getAll({ windowTypes: ["normal"] }).catch(() => [{}]);
+  if (!wins.length) await closeAllPasses();
+}
+
+chrome.runtime.onStartup.addListener(() => closeAllPasses().then(reconcile));
 reconcile();

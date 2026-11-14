@@ -31,6 +31,20 @@ function renderResearch() {
   }
 }
 
+// Switch to a tab showing one of these sites (this window first), or open the first one.
+async function goTo(sites) {
+  const [cur] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tabs = (await chrome.tabs.query({})).filter((t) => sites.includes(W.siteOfUrl(t.url || t.pendingUrl || "")));
+  const t = tabs.find((x) => x.windowId === cur?.windowId && x.active) ?? tabs.find((x) => x.windowId === cur?.windowId) ?? tabs[0];
+  if (t) {
+    await chrome.tabs.update(t.id, { active: true });
+    await chrome.windows.update(t.windowId, { focused: true });
+  } else {
+    await chrome.tabs.create({ url: `https://${sites[0]}/` });
+  }
+  window.close();
+}
+
 function render() {
   renderResearch();
   const live = Object.entries(W.activePasses(passes)).sort((a, b) => a[1].until - b[1].until);
@@ -42,13 +56,17 @@ function render() {
         const r = W.reasonOf(p.reason);
         const row = document.createElement("div");
         row.className = "site";
-        row.innerHTML = `<span class="e"></span><div class="info"><div class="d"></div><div class="r"></div></div><span class="t"></span><button title="Close it now">Close</button>`;
+        row.innerHTML = `<span class="e"></span><div class="info"><a class="d" href="#"></a><div class="r"></div></div><span class="t"></span><button title="Close it now">Close</button>`;
         row.querySelector(".e").textContent = r.emoji;
         row.querySelector(".d").textContent = site + (p.linked?.length ? ` + ${p.linked.length} linked` : "");
         if (p.linked?.length) row.querySelector(".d").title = p.linked.join(", ");
         row.querySelector(".r").textContent = (p.pausedAt ? "⏸ paused · " : "") + (p.note || r.label);
         row.querySelector(".t").dataset.until = p.until;
         if (p.pausedAt) row.querySelector(".t").dataset.paused = p.pausedAt;
+        row.querySelector(".d").addEventListener("click", (e) => {
+          e.preventDefault();
+          goTo(W.passSites(site, p));
+        });
         row.querySelector("button").addEventListener("click", () => chrome.runtime.sendMessage({ type: "pass:close", site }));
         return row;
       }),

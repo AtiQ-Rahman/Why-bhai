@@ -27,7 +27,8 @@ new address still asks why, and so do the *distracting sites*, even from a link.
 
 Several sites can be open at once, each with its own timer. A site's timer runs only while it's on screen:
 switch to another tab or minimize the window and it pauses, come back and it picks up where it left off.
-Left paused for 30 minutes, the site closes again.
+Left paused for 30 minutes, the site closes again. Closing its last tab closes it right away, and closing the browser
+(its last window) closes every site and research mode.
 
 - **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
 - **Again and again?** Opening a *distracting site* (YouTube, Facebook, Instagram by default) more than 3 times in an hour adds one more set of breaths each time. Work sites like GitHub always get the normal breaths.
@@ -38,7 +39,7 @@ Every link opens freely (no black & white, no ticking) — except the *distracti
 When the time is up, everything closes again. Press **✓ Done researching** to end it early (back to the new tab page).
 
 ## Also
-- **Popup:** sites open right now with their timers (close any of them), a **black & white** toggle and a **volume** slider (0 = off).
+- **Popup:** sites open right now with their timers (click one to go to its tab, or close it), a **black & white** toggle and a **volume** slider (0 = off).
 - **Stats:** today, last 7 days and all time; minutes per site; which reasons you pick; how often they worked; research time and topics.
 - **Settings:** always-open sites (`localhost` and `127.0.0.1` by default), breaths per visit, floating timer, sound, and **back to default settings**.
 

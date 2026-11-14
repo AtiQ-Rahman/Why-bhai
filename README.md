@@ -18,6 +18,13 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 5. **The site opens** (with all its subdomains) in black & white, with a tick-tock clock and a floating timer that shows your reason.
    Press **✓ Done — close it** any time to close it and go back to the new tab page. When the time is up: a beep, and the site closes again.
 
+**Searching is quick.** A search from the address bar (Google, Bing, DuckDuckGo, Brave Search) skips the breathing
+and the reason: it opens as 🔍 *Look up one thing*, you just pick 2 or 5 minutes, or type your own (up to 30).
+
+**Follow links freely.** Links you click on an open site open too, no gate: search on Google, click a result
+(same tab or a new one), and it opens on Google's timer. It closes with Google when the time is up. Typing a
+new address still asks why, and so do the *distracting sites*, even from a link.
+
 Several sites can be open at once, each with its own timer. A site's timer runs only while it's on screen:
 switch to another tab or minimize the window and it pauses, come back and it picks up where it left off.
 Left paused for 30 minutes, the site closes again.

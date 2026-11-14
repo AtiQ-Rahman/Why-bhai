@@ -7,6 +7,7 @@
 
   let settings = { ...W.DEFAULT_SETTINGS };
   let pass = null;
+  let root = site; // the site the pass was opened for (another one if this site was linked to it)
   let research = null;
   let pill = { right: 16, bottom: 16, min: false };
   let open = false;
@@ -16,7 +17,7 @@
 
   chrome.storage.local.get(["settings", "passes", "pill", "research"]).then((r) => {
     settings = { ...W.DEFAULT_SETTINGS, ...(r.settings ?? {}) };
-    pass = r.passes?.[site] ?? null;
+    setPass(r.passes);
     research = r.research ?? null;
     pill = { ...pill, ...(r.pill ?? {}) };
     render();
@@ -24,11 +25,16 @@
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area !== "local") return;
     if (ch.settings) settings = { ...W.DEFAULT_SETTINGS, ...(ch.settings.newValue ?? {}) };
-    if (ch.passes) pass = ch.passes.newValue?.[site] ?? null;
+    if (ch.passes) setPass(ch.passes.newValue);
     if (ch.research) research = ch.research.newValue ?? null;
     if (ch.pill && !dragging) pill = { ...pill, ...(ch.pill.newValue ?? {}) };
     render();
   });
+
+  function setPass(passes) {
+    const hit = W.passFor(passes, site);
+    [root, pass] = hit ?? [site, null];
+  }
 
   const CIRC = 2 * Math.PI * 15;
   let host = null;
@@ -164,7 +170,7 @@
     if (W.passLive(pass, now)) {
       const r = W.reasonOf(pass.reason);
       return { kind: "pass", left: W.passLeft(pass, now), minutes: pass.minutes, emoji: r.emoji, label: `${r.emoji} ${pass.note || r.label}`,
-        sub: `${site} · ${pass.minutes} min · closes when the timer ends`, done: "✓ Done — close it", gray: settings.grayscale };
+        sub: `${root === site ? site : `${site} · via ${root}`} · ${pass.minutes} min · closes when the timer ends`, done: "✓ Done — close it", gray: settings.grayscale };
     }
     const allowed = settings.allowlist.some((d) => location.hostname === d || location.hostname.endsWith("." + d));
     if (W.researchOn(research, now) && !allowed) {

@@ -14,6 +14,8 @@
   ];
   const MINUTES = [2, 5, 10, 15, 30];
   const RESEARCH_MINUTES = [15, 30, 45, 60];
+  // A search can also take any whole number of minutes up to this.
+  const SEARCH_MAX_MINUTES = 30;
   // Opening the same site more than this many times in an hour adds a set of breaths each time.
   const REPEAT_FREE = 3;
   const REPEAT_WINDOW = 60 * MIN;
@@ -80,6 +82,40 @@
     return Object.fromEntries(Object.entries(passes ?? {}).filter(([, p]) => passLive(p, now)));
   }
 
+  // The pass covering a site: its own, or the one it was linked to by following a link
+  // from an open site (pass.linked). Prefers a live one. Returns [rootSite, pass] or null.
+  function passFor(passes, site, now = Date.now()) {
+    let found = null;
+    for (const [root, p] of Object.entries(passes ?? {})) {
+      if (root !== site && !p.linked?.includes(site)) continue;
+      if (passLive(p, now)) return [root, p];
+      found ??= [root, p];
+    }
+    return found;
+  }
+
+  // Every site a pass opens: its own and the ones linked to it.
+  const passSites = (root, p) => [root, ...(p?.linked ?? [])];
+
+  // A search on a search engine (typed in the address bar, say): its query, else null.
+  // These skip the breathing and the reason: it's a quick look-up, just pick how long.
+  const SEARCH_ENGINES = [
+    [/^(www\.)?google\.[a-z.]+$/, /^\/search$/],
+    [/^(www\.)?bing\.com$/, /^\/search$/],
+    [/^(html\.)?duckduckgo\.com$/, /^\/(html\/?)?$/],
+    [/^search\.brave\.com$/, /^\/search$/],
+  ];
+  function searchQuery(url) {
+    try {
+      const u = new URL(url);
+      const q = u.searchParams.get("q")?.trim();
+      const hit = SEARCH_ENGINES.some(([h, p]) => h.test(u.hostname.toLowerCase()) && p.test(u.pathname));
+      return hit && q ? q : null;
+    } catch {
+      return null;
+    }
+  }
+
   const researchOn = (research, now = Date.now()) => !!research && research.until > now;
 
   const isDistracting = (host, settings) =>
@@ -104,8 +140,7 @@
     if (u.protocol !== "http:" && u.protocol !== "https:") return "open";
     const host = u.hostname.toLowerCase();
     if ((settings?.allowlist ?? []).some((d) => hostMatches(host, d))) return "open";
-    const p = passes?.[siteOf(host)];
-    if (passLive(p, now)) return "open";
+    if (passLive(passFor(passes, siteOf(host), now)?.[1], now)) return "open";
     if (researchOn(research, now) && !isDistracting(host, settings)) return "open";
     return "gate";
   }
@@ -135,6 +170,7 @@
     REASONS,
     MINUTES,
     RESEARCH_MINUTES,
+    SEARCH_MAX_MINUTES,
     REPEAT_FREE,
     PAUSE_LIMIT,
     DEFAULT_SETTINGS,
@@ -148,8 +184,11 @@
     passLeft,
     passDueAt,
     passLive,
+    passFor,
+    passSites,
     routeUrl,
     researchOn,
+    searchQuery,
     breathsFor,
     isDistracting,
     reasonOf,

@@ -14,8 +14,9 @@ async function getSettings() {
   return { ...W.DEFAULT_SETTINGS, ...(settings ?? {}) };
 }
 
-// passes = { "youtube.com": { until, startedAt, minutes, reason, note, pausedAt? } }
+// passes = { "google.com": { until, startedAt, minutes, reason, note, pausedAt?, linked? } }
 // pausedAt is set while no window shows the site; resuming pushes `until` forward by the pause.
+// linked: sites reached by following a link from it; they share its clock and close with it.
 async function getPasses() {
   const { passes } = await chrome.storage.local.get("passes");
   return passes ?? {};
@@ -43,8 +44,9 @@ function serial(fn) {
 
 const esc = (d) => d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Priorities: allowlist (5) > open passes (4) > research-blocked sites go to the gate (3)
-// > research mode opens everything (2) > everything goes to the gate (1).
+// Priorities: allowlist (5) > open passes, and links followed from them (4)
+// > research-blocked sites go to the gate (3) > research mode opens everything (2)
+// > everything goes to the gate (1).
 async function applyRules(settings, passes, research) {
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   let id = 1;
@@ -58,8 +60,16 @@ async function applyRules(settings, passes, research) {
       rule(3, toGate, { regexFilter: `^(https?://([a-z0-9-]+\\.)*${esc(d)}(:[0-9]+)?([/?#].*)?)$`, resourceTypes: ["main_frame"] });
     }
   }
-  for (const d of Object.keys(W.activePasses(passes))) {
+  const open = Object.entries(W.activePasses(passes)).flatMap(([s, p]) => W.passSites(s, p));
+  for (const d of open) {
     rule(4, { type: "allow" }, { urlFilter: `||${d}^`, resourceTypes: ["main_frame"] });
+  }
+  if (open.length) {
+    // A link clicked on an open site opens too (followLink adds it to that pass), except
+    // the distracting sites: they still ask why.
+    const follow = { initiatorDomains: open, resourceTypes: ["main_frame"] };
+    if (settings.distracting.length) follow.excludedRequestDomains = settings.distracting;
+    rule(4, { type: "allow" }, follow);
   }
   for (const d of settings.allowlist) {
     rule(5, { type: "allow" }, { urlFilter: `||${d}^`, resourceTypes: ["main_frame"] });
@@ -131,11 +141,12 @@ function syncPauses() {
     const now = Date.now();
     let changed = false;
     for (const [site, p] of Object.entries(W.activePasses(passes, now))) {
-      if (seen.has(site) && p.pausedAt) {
+      const onScreen = W.passSites(site, p).some((s) => seen.has(s));
+      if (onScreen && p.pausedAt) {
         p.until += now - p.pausedAt;
         delete p.pausedAt;
         changed = true;
-      } else if (!seen.has(site) && !p.pausedAt) {
+      } else if (!onScreen && !p.pausedAt) {
         p.pausedAt = now;
         changed = true;
       }
@@ -152,7 +163,7 @@ function syncPauses() {
 async function syncTicking() {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
   const site = tab?.url ? W.siteOfUrl(tab.url) : null;
-  const pass = site ? W.activePasses(await getPasses())[site] : null;
+  const pass = site ? W.passFor(W.activePasses(await getPasses()), site)?.[1] : null;
   if (pass && !pass.pausedAt) return toOffscreen({ type: "offscreen:tick", on: true, endsAt: pass.until });
   if (await chrome.offscreen.hasDocument().catch(() => false)) {
     chrome.runtime.sendMessage({ type: "offscreen:tick", on: false }).catch(() => {});
@@ -221,7 +232,10 @@ function closeDue({ sites = null, endResearch = false } = {}) {
   return serial(async () => {
     const { passes, research } = await getState();
     const now = Date.now();
-    const closing = Object.keys(passes).filter((s) => (sites ? sites.includes(s) : W.passDueAt(passes[s]) <= now));
+    // `sites` may name a linked site: close the pass it belongs to.
+    const roots = sites?.map((s) => W.passFor(passes, s, now)?.[0] ?? s);
+    const closing = Object.keys(passes).filter((s) => (roots ? roots.includes(s) : W.passDueAt(passes[s]) <= now));
+    const tabsOf = (list) => list.flatMap((s) => W.passSites(s, passes[s]));
     const left = closing.filter((s) => !sites && passes[s].pausedAt); // walked away from it
     const timedOut = closing.filter((s) => !sites && !passes[s].pausedAt);
     const researchDone = !!research && (endResearch || research.until <= now);
@@ -242,8 +256,12 @@ function closeDue({ sites = null, endResearch = false } = {}) {
       // Asked on the gate page when time runs out: "did you get what you came for?"
       if (timedOut.includes(s)) ask[s] = { reason: p.reason, note: p.note, at: now };
       else delete ask[s];
-      delete passes[s];
     }
+    const sweeps = [];
+    if (sites) sweeps.push({ only: tabsOf(closing), param: "home" });
+    if (timedOut.length) sweeps.push({ only: tabsOf(timedOut), param: "?timesup=1" });
+    if (left.length) sweeps.push({ only: tabsOf(left), param: "" });
+    for (const s of closing) delete passes[s];
     await chrome.storage.local.set({ feedback: ask });
 
     let next = research;
@@ -258,12 +276,8 @@ function closeDue({ sites = null, endResearch = false } = {}) {
       next = null;
     }
 
-    // Research ending can close any tab; a pass ending only closes its own site.
-    const sweeps = [];
-    if (researchDone) sweeps.push({ only: null, param: endResearch ? "home" : "?researchdone=1" });
-    if (sites) sweeps.push({ only: closing, param: "home" });
-    if (timedOut.length) sweeps.push({ only: timedOut, param: "?timesup=1" });
-    if (left.length) sweeps.push({ only: left, param: "" });
+    // Research ending can close any tab; a pass ending only closes its own sites.
+    if (researchDone) sweeps.unshift({ only: null, param: endResearch ? "home" : "?researchdone=1" });
     await commit(passes, next, sweeps);
     if ((researchDone && !endResearch) || timedOut.length) toOffscreen({ type: "offscreen:beep" });
     return { ok: true };
@@ -292,10 +306,12 @@ function gateBegin({ url }) {
     const { settings, passes, research } = await getState();
     if (W.routeUrl(url, settings, passes, research) === "open") return { ok: true, open: true };
     const { gates, recent } = await chrome.storage.local.get(["gates", "recent"]);
-    const breaths = W.breathsFor(settings.breaths, recent?.[site], W.isDistracting(site, settings));
-    await chrome.storage.local.set({ gates: { ...(gates ?? {}), [site]: { at: Date.now(), breaths } } });
+    // A search skips the breathing; gateOpen then only takes "Look up one thing".
+    const search = !!W.searchQuery(url);
+    const breaths = search ? 0 : W.breathsFor(settings.breaths, recent?.[site], W.isDistracting(site, settings));
+    await chrome.storage.local.set({ gates: { ...(gates ?? {}), [site]: { at: Date.now(), breaths, search } } });
     const opensThisHour = W.isDistracting(site, settings) ? (recent?.[site] ?? []).filter((t) => Date.now() - t < 60 * MIN).length : 0;
-    return { ok: true, site, breaths, extra: settings.breaths, opensThisHour };
+    return { ok: true, site, breaths, extra: settings.breaths, opensThisHour, search };
   });
 }
 
@@ -309,11 +325,14 @@ function gateOpen({ url, reason, note, minutes }) {
     if (!r) return { ok: false, error: "Pick a reason." };
     const { gates, recent } = await chrome.storage.local.get(["gates", "recent"]);
     const g = gates?.[site];
+    if (g?.search && reason !== "lookup") return { ok: false, error: "A search opens as a quick look-up." };
     const need = (g?.breaths ?? 0) + (r.extraBreaths ? settings.breaths : 0);
     if (!g || Date.now() - g.at < need * W.BREATH_S * 1000 - 2000) return { ok: false, error: "Finish the breathing first." };
     const cleanNote = String(note ?? "").trim().slice(0, 140);
     if (reason === "other" && !cleanNote) return { ok: false, error: "Write the reason." };
-    const min = r.minutes.includes(Number(minutes)) ? Number(minutes) : r.minutes[0];
+    const n = Number(minutes);
+    const custom = g.search && Number.isInteger(n) && n >= 1 && n <= W.SEARCH_MAX_MINUTES;
+    const min = r.minutes.includes(n) || custom ? n : r.minutes[0];
     const now = Date.now();
     passes[site] = { until: now + min * MIN, startedAt: now, minutes: min, reason, note: cleanNote };
     delete gates[site];
@@ -342,6 +361,46 @@ function feedback({ site, got }) {
     delete all[site];
     await chrome.storage.local.set({ feedback: all });
     return { ok: true };
+  });
+}
+
+// ---------- following links ----------
+// A site with no pass only loads when the "follow" rule let a link from an open site through.
+// Add it to the pass it came from, so it shares that clock and closes with it. tabSites
+// remembers the last site each tab showed (session storage outlives a sleeping worker).
+
+function followLink(tab) {
+  return serial(async () => {
+    const { tabSites = {} } = await chrome.storage.session.get("tabSites");
+    const prev = tabSites[tab.id];
+    const site = W.siteOfUrl(tab.url);
+    tabSites[tab.id] = site;
+    await chrome.storage.session.set({ tabSites });
+    if (!site) return;
+    const { settings, passes, research } = await getState();
+    if (W.routeUrl(tab.url, settings, passes, research) === "open") return;
+    // Where the link was: this tab's last site, else the tab that opened it.
+    const opener = tab.openerTabId != null ? await chrome.tabs.get(tab.openerTabId).catch(() => null) : null;
+    const live = W.activePasses(passes);
+    const roots = Object.keys(live);
+    const from =
+      [prev, opener && W.siteOfUrl(opener.url || "")].map((s) => s && W.passFor(live, s)?.[0]).find(Boolean) ??
+      (roots.length === 1 ? roots[0] : null);
+    if (!from || W.isDistracting(site, settings)) {
+      chrome.tabs.update(tab.id, { url: `${GATE_PAGE}#${tab.url}` }).catch(() => {});
+      return;
+    }
+    passes[from].linked = [...new Set([...(passes[from].linked ?? []), site])];
+    await commit(passes, research);
+  }).then(syncPauses);
+}
+
+function forgetTab(tabId) {
+  return serial(async () => {
+    const { tabSites } = await chrome.storage.session.get("tabSites");
+    if (!tabSites || !(tabId in tabSites)) return;
+    delete tabSites[tabId];
+    await chrome.storage.session.set({ tabSites });
   });
 }
 
@@ -429,8 +488,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
 // The heartbeat also catches minimize/restore, which fires no event of its own.
 chrome.alarms.onAlarm.addListener(() => syncPauses().then(() => closeDue()));
 chrome.tabs.onActivated.addListener(() => syncPauses());
-chrome.tabs.onUpdated.addListener((_, info, tab) => info.url && tab.active && syncPauses());
-chrome.tabs.onRemoved.addListener(() => syncPauses());
+chrome.tabs.onUpdated.addListener((_, info, tab) => info.url && followLink(tab)); // then syncPauses
+chrome.tabs.onRemoved.addListener((tabId) => forgetTab(tabId).then(syncPauses));
 chrome.tabs.onAttached.addListener(() => syncPauses());
 chrome.windows.onFocusChanged.addListener(() => syncPauses());
 chrome.windows.onRemoved.addListener(() => syncPauses());

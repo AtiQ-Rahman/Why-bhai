@@ -31,6 +31,7 @@ async function begin() {
   if (!r?.ok) return showError(r?.error ?? "Can't open this.");
   if (r.open) return go();
   extraBreaths = r.extra;
+  if (r.search) return showSearch();
   if (r.opensThisHour >= W.REPEAT_FREE) {
     $("repeat").hidden = false;
     $("repeat").textContent = `${ordinal(r.opensThisHour + 1)} time on ${site} this hour — ${r.breaths} breaths this time.`;
@@ -103,6 +104,33 @@ function boredBreaths() {
   }, (n, total) => `Bored tax: breath ${n} of ${total} 🫠`);
 }
 
+// A search from the address bar: no breathing, no reason. It's a look-up; just pick how long.
+function showSearch() {
+  reason = "lookup";
+  note = W.searchQuery(target).slice(0, 140);
+  $("site").replaceChildren("Searching ", Object.assign(document.createElement("b"), { textContent: site }), ".");
+  $("long-back").hidden = true;
+  const r = W.reasonOf(reason);
+  $("long").hidden = false;
+  $("chosen").replaceChildren(`${r.emoji} `, Object.assign(document.createElement("b"), { textContent: note }));
+  $("mins").replaceChildren(...r.minutes.map(minuteButton));
+  $("custom").hidden = false;
+  $("custom-min").max = W.SEARCH_MAX_MINUTES;
+}
+// Or any number of minutes, for a search.
+async function openCustom() {
+  const m = Number($("custom-min").value);
+  if (!Number.isInteger(m) || m < 1 || m > W.SEARCH_MAX_MINUTES) {
+    $("custom-min").focus();
+    return showError(`Pick 1 to ${W.SEARCH_MAX_MINUTES} minutes.`);
+  }
+  const r = await chrome.runtime.sendMessage({ type: "gate:open", url: target, reason, note, minutes: m });
+  if (!r?.ok) return showError(r?.error ?? "Can't open this.");
+  go();
+}
+$("custom-go").addEventListener("click", openCustom);
+$("custom-min").addEventListener("keydown", (e) => e.key === "Enter" && openCustom());
+
 // Step 3: how long? Only the times that fit the reason.
 function showLong() {
   pushStep();
@@ -134,6 +162,10 @@ async function init() {
 
   document.title = `${site}? — Why Bhai?`;
   $("site").replaceChildren(Object.assign(document.createElement("b"), { textContent: site }), " is closed. Breathe first, then tell me why.");
+  if (W.searchQuery(target)) {
+    $("site").replaceChildren(Object.assign(document.createElement("b"), { textContent: site }), " is closed. A quick search? Just pick how long.");
+    $("begin").textContent = "🔍 Pick how long";
+  }
   if (params.has("timesup")) {
     $("title").textContent = "Time's up ⏰";
     $("site").replaceChildren(Object.assign(document.createElement("b"), { textContent: site }), " closed again. Need it once more? Breathe first.");

@@ -42,8 +42,10 @@ async function render() {
 
   const worked = {};
   const topics = {};
+  const missed = [];
   for (const d of week) {
-    for (const [k, v] of Object.entries(d.feedback ?? {})) {
+    missed.push(...(d.missed ?? []).slice().reverse());
+    for (const [k, v] of Object.entries(d.worked ?? {})) {
       const w = (worked[k] ??= { yes: 0, no: 0 });
       w.yes += v.yes;
       w.no += v.no;
@@ -53,24 +55,31 @@ async function render() {
   list(
     $("worked"),
     Object.entries(worked)
-      .map(([id, w]) => ({ name: `${W.reasonOf(id).emoji} ${W.reasonOf(id).label}`, v: Math.round((100 * w.yes) / (w.yes + w.no)), n: w.yes + w.no }))
-      .sort((a, b) => b.n - a.n),
+      .map(([name, w]) => ({ name, v: Math.round((100 * w.yes) / (w.yes + w.no)), n: w.yes + w.no }))
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 8),
     (v) => `${v}% yes`,
   );
+  // Newest first; just the words and the site, no bar.
+  if (!missed.length) $("missed").innerHTML = `<div class="empty">Nothing yet.</div>`;
+  else
+    $("missed").replaceChildren(
+      ...missed.slice(0, 10).map((m) => {
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `<span class="name"></span><span class="val muted"></span>`;
+        item.querySelector(".name").textContent = `🙃 ${m.note}`;
+        item.querySelector(".val").textContent = m.site;
+        return item;
+      }),
+    );
   list($("topics"), Object.entries(topics).map(([name, v]) => ({ name, v })).sort((a, b) => b.v - a.v).slice(0, 8), W.fmtMin);
 
   const sites = {};
-  const reasons = {};
   for (const d of week) {
     for (const [k, v] of Object.entries(d.sites ?? {})) sites[k] = (sites[k] ?? 0) + v;
-    for (const [k, v] of Object.entries(d.reasons ?? {})) reasons[k] = (reasons[k] ?? 0) + v;
   }
   list($("sites"), Object.entries(sites).map(([name, v]) => ({ name, v })).sort((a, b) => b.v - a.v).slice(0, 8), W.fmtMin);
-  list(
-    $("reasons"),
-    Object.entries(reasons).map(([id, v]) => ({ name: `${W.reasonOf(id).emoji} ${W.reasonOf(id).label}`, v })).sort((a, b) => b.v - a.v),
-    (v) => `${v}×`,
-  );
 }
 
 chrome.storage.onChanged.addListener((ch, area) => area === "local" && ch.stats && render());

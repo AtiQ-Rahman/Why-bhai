@@ -13,13 +13,13 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 ## How it works
 1. **Everything is closed.** Any site you open (Google too) lands on the *Why, bhai?* page. Tabs that were already open close when you install it.
 2. **Breathe.** One set of slow breaths (3 by default): in for 4s, out for 6s.
-3. **Why?** 💬 Check messages · 🔍 Look up one thing · 📚 Work / study · 📢 Post or reply · 🫠 Just bored · ✏️ Something else (write it).
-4. **How long?** Only the times that fit the reason: 🔍 2–5 min, 💬 2–10, 📢 5–15, 📚 5–30. 🫠 *Just bored* costs one more set of breaths.
+3. **Why?** Write it in your own words: *"reply to the class group"*, not a button you tap without thinking.
+4. **How long?** 2, 5, 10, 15 or 30 minutes, or type your own (1–30).
 5. **The site opens** (with all its subdomains) in black & white, with a tick-tock clock and a floating timer that shows your reason.
    Press **✓ Done — close it** any time to close it and go back to the new tab page. When the time is up: a beep, and the site closes again.
 
 **Searching is quick.** A search from the address bar (Google, Bing, DuckDuckGo, Brave Search) skips the breathing
-and the reason: it opens as 🔍 *Look up one thing*, you just pick 2 or 5 minutes, or type your own (up to 30).
+and the reason (the search is the reason): you just pick how long.
 
 **Follow links freely.** Links you click on an open site open too, no gate: search on Google, click a result
 (same tab or a new one), and it opens on Google's timer. It closes with Google when the time is up. Typing a
@@ -30,7 +30,7 @@ switch to another tab or minimize the window and it pauses, come back and it pic
 Left paused for 30 minutes, the site closes again. Closing its last tab closes it right away, and closing the browser
 (its last window) closes every site and research mode.
 
-- **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — your answers show up in stats per reason.
+- **Did it work?** When a site's time runs out, it asks *"Did you get what you came for?"* — stats show how often it worked per site, and what you came for and didn't get.
 - **Again and again?** Opening a *distracting site* (YouTube, Facebook, Instagram by default) more than 3 times in an hour adds one more set of breaths each time. Work sites like GitHub always get the normal breaths.
 
 ## 🔬 Research mode
@@ -40,7 +40,7 @@ When the time is up, everything closes again. Press **✓ Done researching** to 
 
 ## Also
 - **Popup:** sites open right now with their timers (click one to go to its tab, or close it), a **black & white** toggle and a **volume** slider (0 = off).
-- **Stats:** today, last 7 days and all time; minutes per site; which reasons you pick; how often they worked; research time and topics.
+- **Stats:** today, last 7 days and all time; minutes per site; how often a site gave you what you came for; what you didn't get; research time and topics.
 - **Settings:** always-open sites (`localhost` and `127.0.0.1` by default), breaths per visit, floating timer, sound, and **back to default settings**.
 
 ## Install (Brave, Chrome, Edge)

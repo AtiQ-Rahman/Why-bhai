@@ -3,19 +3,20 @@
 (() => {
   const MIN = 60 * 1000;
 
-  // Each reason offers the times that fit it. "Just bored" costs one more set of breaths.
+  // You write the reason yourself ("other"); a search from the address bar is "lookup".
+  // The rest are from older versions, kept so their passes still show.
   const REASONS = [
-    { id: "messages", label: "Check messages", emoji: "💬", minutes: [2, 5, 10] },
-    { id: "lookup", label: "Look up one thing", emoji: "🔍", minutes: [2, 5] },
-    { id: "work", label: "Work / study", emoji: "📚", minutes: [5, 10, 15, 30] },
-    { id: "post", label: "Post or reply", emoji: "📢", minutes: [5, 10, 15] },
-    { id: "bored", label: "Just bored", emoji: "🫠", minutes: [2, 5, 10], extraBreaths: true },
-    { id: "other", label: "Something else", emoji: "✏️", minutes: [2, 5, 10, 15, 30] },
+    { id: "other", label: "Your reason", emoji: "✏️" },
+    { id: "lookup", label: "Look up one thing", emoji: "🔍" },
+    { id: "messages", label: "Check messages", emoji: "💬" },
+    { id: "work", label: "Work / study", emoji: "📚" },
+    { id: "post", label: "Post or reply", emoji: "📢" },
+    { id: "bored", label: "Just bored", emoji: "🫠" },
   ];
+  // The minute buttons; any whole number from 1 to MAX_MINUTES can be typed instead.
   const MINUTES = [2, 5, 10, 15, 30];
+  const MAX_MINUTES = 30;
   const RESEARCH_MINUTES = [15, 30, 45, 60];
-  // A search can also take any whole number of minutes up to this.
-  const SEARCH_MAX_MINUTES = 30;
   // Opening the same site more than this many times in an hour adds a set of breaths each time.
   const REPEAT_FREE = 3;
   const REPEAT_WINDOW = 60 * MIN;
@@ -145,7 +146,7 @@
     return "gate";
   }
 
-  const reasonOf = (id) => REASONS.find((r) => r.id === id) ?? REASONS[REASONS.length - 1];
+  const reasonOf = (id) => REASONS.find((r) => r.id === id) ?? REASONS[0];
 
   function fmt(ms) {
     const total = Math.max(0, Math.ceil(ms / 1000));
@@ -170,7 +171,7 @@
     REASONS,
     MINUTES,
     RESEARCH_MINUTES,
-    SEARCH_MAX_MINUTES,
+    MAX_MINUTES,
     REPEAT_FREE,
     PAUSE_LIMIT,
     DEFAULT_SETTINGS,

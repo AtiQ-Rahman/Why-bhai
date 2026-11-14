@@ -194,17 +194,18 @@ async function schedule(passes, research) {
 }
 
 // ---------- stats ----------
-// stats = { days: { "YYYY-MM-DD": { opens, m, sites: { site: min }, reasons: { id: count },
-//                      feedback: { reasonId: { yes, no } }, research: { m, topics: { topic: min } } } },
+// stats = { days: { "YYYY-MM-DD": { opens, m, sites: { site: min }, worked: { site: { yes, no } },
+//                      missed: [{ site, note }], research: { m, topics: { topic: min } } } },
 //           total: { opens, m, research } }
+// (Older days also have reasons: { id: count } and feedback: { reasonId: { yes, no } }.)
 
 async function updateStats(fn, at = Date.now()) {
   const { stats: raw } = await chrome.storage.local.get("stats");
   const stats = raw?.days ? raw : { days: {}, total: { opens: 0, m: 0, research: 0 } };
   stats.total.research ??= 0;
   const key = W.dayKey(at);
-  const d = (stats.days[key] ??= { opens: 0, m: 0, sites: {}, reasons: {} });
-  d.feedback ??= {};
+  const d = (stats.days[key] ??= { opens: 0, m: 0, sites: {} });
+  d.worked ??= {};
   d.research ??= { m: 0, topics: {} };
   fn(d, stats.total);
   const keys = Object.keys(stats.days).sort();
@@ -312,7 +313,7 @@ function gateBegin({ url }) {
     const breaths = search ? 0 : W.breathsFor(settings.breaths, recent?.[site], W.isDistracting(site, settings));
     await chrome.storage.local.set({ gates: { ...(gates ?? {}), [site]: { at: Date.now(), breaths, search } } });
     const opensThisHour = W.isDistracting(site, settings) ? (recent?.[site] ?? []).filter((t) => Date.now() - t < 60 * MIN).length : 0;
-    return { ok: true, site, breaths, extra: settings.breaths, opensThisHour, search };
+    return { ok: true, site, breaths, opensThisHour, search };
   });
 }
 
@@ -322,18 +323,15 @@ function gateOpen({ url, reason, note, minutes }) {
     if (!site) return { ok: false, error: "Not a website." };
     const { settings, passes, research } = await getState();
     if (W.routeUrl(url, settings, passes, research) === "open") return { ok: true };
-    const r = W.REASONS.find((x) => x.id === reason);
-    if (!r) return { ok: false, error: "Pick a reason." };
     const { gates, recent } = await chrome.storage.local.get(["gates", "recent"]);
     const g = gates?.[site];
-    if (g?.search && reason !== "lookup") return { ok: false, error: "A search opens as a quick look-up." };
-    const need = (g?.breaths ?? 0) + (r.extraBreaths ? settings.breaths : 0);
-    if (!g || Date.now() - g.at < need * W.BREATH_S * 1000 - 2000) return { ok: false, error: "Finish the breathing first." };
+    // A search opens as a look-up (no breathing); everything else needs a written reason.
+    if (reason !== (g?.search ? "lookup" : "other")) return { ok: false, error: "Write why, in a few words." };
+    if (!g || Date.now() - g.at < (g.breaths ?? 0) * W.BREATH_S * 1000 - 2000) return { ok: false, error: "Finish the breathing first." };
     const cleanNote = String(note ?? "").trim().slice(0, 140);
-    if (reason === "other" && !cleanNote) return { ok: false, error: "Write the reason." };
-    const n = Number(minutes);
-    const custom = g.search && Number.isInteger(n) && n >= 1 && n <= W.SEARCH_MAX_MINUTES;
-    const min = r.minutes.includes(n) || custom ? n : r.minutes[0];
+    if (cleanNote.length < (g.search ? 1 : 3)) return { ok: false, error: "Write why, in a few words." };
+    const min = Number(minutes);
+    if (!Number.isInteger(min) || min < 1 || min > W.MAX_MINUTES) return { ok: false, error: `Pick 1 to ${W.MAX_MINUTES} minutes.` };
     const now = Date.now();
     passes[site] = { until: now + min * MIN, startedAt: now, minutes: min, reason, note: cleanNote };
     delete gates[site];
@@ -341,7 +339,6 @@ function gateOpen({ url, reason, note, minutes }) {
     await chrome.storage.local.set({ gates, recent: { ...(recent ?? {}), [site]: hits } });
     await updateStats((d, t) => {
       d.opens += 1;
-      d.reasons[reason] = (d.reasons[reason] ?? 0) + 1;
       t.opens += 1;
     });
     await commit(passes, research);
@@ -356,8 +353,10 @@ function feedback({ site, got }) {
     const f = all?.[site];
     if (!f) return { ok: true };
     await updateStats((d) => {
-      const fb = (d.feedback[f.reason] ??= { yes: 0, no: 0 });
-      fb[got ? "yes" : "no"] += 1;
+      const w = (d.worked[site] ??= { yes: 0, no: 0 });
+      w[got ? "yes" : "no"] += 1;
+      // What you came for and didn't get: shown on the stats page.
+      if (!got && f.note) d.missed = [...(d.missed ?? []), { site, note: f.note }].slice(-30);
     });
     delete all[site];
     await chrome.storage.local.set({ feedback: all });

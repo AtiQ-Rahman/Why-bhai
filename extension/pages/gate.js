@@ -11,9 +11,9 @@ const target = (() => {
 })();
 const site = target ? W.siteOfUrl(target) : null;
 
-let reason = null;
+let reason = "other"; // "other": the reason you wrote; "lookup": a search
 let note = "";
-let extraBreaths = 3; // one more set for "Just bored"
+const MIN_NOTE = 3; // characters: a few words, not a keystroke
 
 function showError(msg) {
   $("err").hidden = false;
@@ -30,7 +30,6 @@ async function begin() {
   const r = await chrome.runtime.sendMessage({ type: "gate:begin", url: target });
   if (!r?.ok) return showError(r?.error ?? "Can't open this.");
   if (r.open) return go();
-  extraBreaths = r.extra;
   if (r.search) return showSearch();
   if (r.opensThisHour >= W.REPEAT_FREE) {
     $("repeat").hidden = false;
@@ -39,117 +38,79 @@ async function begin() {
   $("breath-box").hidden = false;
   runBreaths(breathEls(), r.breaths, () => {
     $("breath-box").hidden = true;
-    $("why").hidden = false;
+    showWhy();
   });
 }
 
-// Step 2: why?
-$("reasons").replaceChildren(
-  ...W.REASONS.map((r) => {
-    const b = document.createElement("button");
-    const e = document.createElement("span");
-    e.className = "e";
-    e.textContent = r.emoji;
-    b.append(e, r.label);
-    b.addEventListener("click", () => {
-      reason = r.id;
-      for (const x of $("reasons").children) x.classList.toggle("selected", x === b);
-      const other = r.id === "other";
-      $("note").hidden = $("note-next").hidden = !other;
-      if (other) return $("note").focus();
-      note = "";
-      if (r.extraBreaths) return boredBreaths();
-      showLong();
-    });
-    return b;
-  }),
-);
+// Step 2: why? In your own words.
+function showWhy() {
+  $("long").hidden = true;
+  $("why").hidden = false;
+  $("note").focus();
+}
 const submitNote = () => {
   note = $("note").value.trim();
-  if (!note) return $("note").focus();
+  if (note.length < MIN_NOTE) {
+    $("note").focus();
+    return showError("Write why, in a few words.");
+  }
+  $("err").hidden = true;
   showLong();
 };
 $("note-next").addEventListener("click", submitNote);
 $("note").addEventListener("keydown", (e) => e.key === "Enter" && submitNote());
 
-// Steps after "why?" get their own history entry, so the browser's Back button
-// returns to the reasons instead of leaving the page.
-function pushStep() {
-  if (history.state?.step !== "after-why") history.pushState({ step: "after-why" }, "");
-}
-let stopBored = null;
-function showWhy() {
-  stopBored?.();
-  stopBored = null;
-  $("breath-box").hidden = true;
-  $("long").hidden = true;
-  $("why").hidden = false;
-  for (const x of $("reasons").children) x.classList.remove("selected");
-  $("note").hidden = $("note-next").hidden = true;
-}
+// "How long?" gets its own history entry, so the browser's Back button
+// returns to the reason instead of leaving the page.
 addEventListener("popstate", () => {
-  if (history.state?.step !== "after-why" && $("why").hidden && (!$("long").hidden || stopBored)) showWhy();
+  if (history.state?.step !== "after-why" && reason === "other" && !$("long").hidden) showWhy();
 });
 $("long-back").addEventListener("click", () => history.back());
 
-// "Just bored" costs one more set of breaths.
-function boredBreaths() {
-  pushStep();
-  $("why").hidden = true;
-  $("breath-box").hidden = false;
-  stopBored = runBreaths(breathEls(), extraBreaths, () => {
-    stopBored = null;
-    $("breath-box").hidden = true;
-    showLong();
-  }, (n, total) => `Bored tax: breath ${n} of ${total} 🫠`);
-}
-
-// A search from the address bar: no breathing, no reason. It's a look-up; just pick how long.
+// A search from the address bar: no breathing, no reason (the search is the reason).
 function showSearch() {
   reason = "lookup";
   note = W.searchQuery(target).slice(0, 140);
   $("site").replaceChildren("Searching ", Object.assign(document.createElement("b"), { textContent: site }), ".");
   $("long-back").hidden = true;
-  const r = W.reasonOf(reason);
-  $("long").hidden = false;
-  $("chosen").replaceChildren(`${r.emoji} `, Object.assign(document.createElement("b"), { textContent: note }));
-  $("mins").replaceChildren(...r.minutes.map(minuteButton));
-  $("custom").hidden = false;
-  $("custom-min").max = W.SEARCH_MAX_MINUTES;
+  showMinutes();
 }
-// Or any number of minutes, for a search.
-async function openCustom() {
-  const m = Number($("custom-min").value);
-  if (!Number.isInteger(m) || m < 1 || m > W.SEARCH_MAX_MINUTES) {
-    $("custom-min").focus();
-    return showError(`Pick 1 to ${W.SEARCH_MAX_MINUTES} minutes.`);
-  }
-  const r = await chrome.runtime.sendMessage({ type: "gate:open", url: target, reason, note, minutes: m });
+
+// Step 3: how long?
+function showLong() {
+  if (history.state?.step !== "after-why") history.pushState({ step: "after-why" }, "");
+  $("why").hidden = true;
+  showMinutes();
+}
+function showMinutes() {
+  $("long").hidden = false;
+  $("chosen").replaceChildren(`${W.reasonOf(reason).emoji} `, Object.assign(document.createElement("b"), { textContent: note }));
+  $("mins").replaceChildren(...W.MINUTES.map(minuteButton));
+  $("custom-min").max = W.MAX_MINUTES;
+  $("custom-min").value = "";
+}
+async function open(minutes) {
+  const r = await chrome.runtime.sendMessage({ type: "gate:open", url: target, reason, note, minutes });
   if (!r?.ok) return showError(r?.error ?? "Can't open this.");
   go();
-}
-$("custom-go").addEventListener("click", openCustom);
-$("custom-min").addEventListener("keydown", (e) => e.key === "Enter" && openCustom());
-
-// Step 3: how long? Only the times that fit the reason.
-function showLong() {
-  pushStep();
-  const r = W.reasonOf(reason);
-  $("why").hidden = true;
-  $("long").hidden = false;
-  $("chosen").replaceChildren(`${r.emoji} `, Object.assign(document.createElement("b"), { textContent: note || r.label }));
-  $("mins").replaceChildren(...r.minutes.map(minuteButton));
 }
 function minuteButton(m) {
   const b = document.createElement("button");
   b.innerHTML = `${m}<small>min</small>`;
-  b.addEventListener("click", async () => {
-    const r = await chrome.runtime.sendMessage({ type: "gate:open", url: target, reason, note, minutes: m });
-    if (!r?.ok) return showError(r?.error ?? "Can't open this.");
-    go();
-  });
+  b.addEventListener("click", () => open(m));
   return b;
 }
+// Or any whole number of minutes.
+function openCustom() {
+  const m = Number($("custom-min").value);
+  if (!Number.isInteger(m) || m < 1 || m > W.MAX_MINUTES) {
+    $("custom-min").focus();
+    return showError(`Pick 1 to ${W.MAX_MINUTES} minutes.`);
+  }
+  open(m);
+}
+$("custom-go").addEventListener("click", openCustom);
+$("custom-min").addEventListener("keydown", (e) => e.key === "Enter" && openCustom());
 $("begin").addEventListener("click", begin);
 
 async function init() {

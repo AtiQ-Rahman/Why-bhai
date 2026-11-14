@@ -15,9 +15,6 @@
     #site b { color: var(--text); }
     .step { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
     .q { font-size: 18px; font-weight: 800; }
-    .reasons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; width: 100%; }
-    .reasons button { justify-content: flex-start; padding: 12px 14px; font-weight: 600; text-align: left; }
-    .reasons button .e { font-size: 18px; }
     .mins { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     .mins button { min-width: 72px; padding: 12px 10px; font-size: 18px; font-weight: 800; flex-direction: column; gap: 0; }
     .mins button small { font-size: 12px; font-weight: 600; color: var(--muted); }
@@ -57,22 +54,21 @@
 
     <div class="step" id="why" hidden>
       <div class="q">Why do you want to open it?</div>
-      <div class="reasons" id="reasons"></div>
-      <input type="text" id="note" maxlength="140" placeholder="Write the reason…" hidden>
-      <button class="primary" id="note-next" hidden>Next</button>
+      <input type="text" id="note" maxlength="140" placeholder="e.g. reply to the class group, check the bus times" aria-label="Why">
+      <button class="primary" id="note-next">Next</button>
     </div>
 
     <div class="step" id="long" hidden>
       <p class="chosen" id="chosen"></p>
       <div class="q">For how long?</div>
       <div class="mins" id="mins"></div>
-      <div class="custom" id="custom" hidden>
+      <div class="custom" id="custom">
         <input type="number" id="custom-min" min="1" max="30" step="1" inputmode="numeric" placeholder="Other" aria-label="Minutes">
         <span class="muted">min</span>
         <button id="custom-go">Open</button>
       </div>
       <p class="small muted">The clock ticks and the page stays black &amp; white. When time's up, it closes again.</p>
-      <button class="ghost" id="long-back">← Pick another reason</button>
+      <button class="ghost" id="long-back">← Change the reason</button>
     </div>
 
     <p class="error" id="err" hidden></p>

@@ -113,6 +113,15 @@ $("custom-go").addEventListener("click", openCustom);
 $("custom-min").addEventListener("keydown", (e) => e.key === "Enter" && openCustom());
 $("begin").addEventListener("click", begin);
 
+// Changed your mind: close this tab (or swap it for a new tab if it's the window's last).
+$("skip").addEventListener("click", async () => {
+  await chrome.runtime.sendMessage({ type: "gate:skip", url: target }).catch(() => {});
+  const tab = await chrome.tabs.getCurrent();
+  const others = await chrome.tabs.query({ windowId: tab.windowId });
+  if (others.length <= 1) await chrome.tabs.create({ windowId: tab.windowId });
+  chrome.tabs.remove(tab.id);
+});
+
 async function init() {
   if (!target) {
     $("site").textContent = "Nothing to open here.";
@@ -122,6 +131,7 @@ async function init() {
   if (W.routeUrl(target, { ...W.DEFAULT_SETTINGS, ...settings }, passes, research) === "open") return go();
 
   document.title = `${site}? — Why Bhai?`;
+  $("skip").hidden = false;
   $("site").replaceChildren(Object.assign(document.createElement("b"), { textContent: site }), " is closed. Breathe first, then tell me why.");
   if (W.searchQuery(target)) {
     $("site").replaceChildren(Object.assign(document.createElement("b"), { textContent: site }), " is closed. A quick search? Just pick how long.");

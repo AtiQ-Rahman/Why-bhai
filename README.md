@@ -5,7 +5,7 @@ and pick **how long**. The site opens in black & white with a ticking clock, the
 
 ![Why Bhai? demo](docs/demo.gif)
 
-🎬 [Watch the demo video with voiceover (MP4, 1 min)](docs/why-bhai-demo.mp4)
+🎬 [Watch the demo video with voiceover (MP4, 1½ min)](docs/why-bhai-demo.mp4)
 
 The third of the Bhai family, next to [Hold On Bhai](https://github.com/AtiQ-Rahman/Hold-On-Bhai) (gentle speed bump)
 and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lock).
@@ -14,6 +14,7 @@ and [Lock On Bhai](https://github.com/AtiQ-Rahman/Lock-On-Bhai) (strict focus lo
 1. **Everything is closed.** Any site you open (Google too) lands on the *Why, bhai?* page. Tabs that were already open close when you install it.
 2. **Breathe.** One set of slow breaths (3 by default): in for 4s, out for 6s.
 3. **Why?** Write it in your own words: *"reply to the class group"*, not a button you tap without thinking.
+   Not for anything real? **✕ Never mind, close it** — on every step. Stats count it as a win.
 4. **How long?** 2, 5, 10, 15 or 30 minutes, or type your own (1–30).
 5. **The site opens** (with all its subdomains) in black & white, with a tick-tock clock and a floating timer that shows your reason.
    Press **✓ Done — close it** any time to close it and go back to the new tab page. When the time is up: a beep, and the site closes again.
@@ -39,8 +40,8 @@ Every link opens freely (no black & white, no ticking) — except the *distracti
 When the time is up, everything closes again. Press **✓ Done researching** to end it early (back to the new tab page).
 
 ## Also
-- **Popup:** sites open right now with their timers (click one to go to its tab, or close it), a **black & white** toggle and a **volume** slider (0 = off).
-- **Stats:** today, last 7 days and all time; minutes per site; how often a site gave you what you came for; what you didn't get; research time and topics.
+- **Popup:** sites open right now with their timers (click one to go to its tab, or close it; “+1” means a site opened from its links), a **black & white** toggle and a **volume** slider (0 = off).
+- **Stats:** today, last 7 days and all time (opened vs. closed instead); minutes per site; how often a site gave you what you came for; what you didn't get; research time and topics.
 - **Settings:** always-open sites (`localhost` and `127.0.0.1` by default), breaths per visit, floating timer, sound, and **back to default settings**.
 
 ## Install (Brave, Chrome, Edge)
@@ -53,15 +54,21 @@ Shortcut: `Alt+Shift+W` opens the popup.
 ## Screenshots
 | Breathe | Why? | How long? |
 |---|---|---|
-| ![](docs/screenshots/gate-breathing.png) | ![](docs/screenshots/reasons.png) | ![](docs/screenshots/minutes.png) |
+| ![](docs/screenshots/gate-breathing.png) | ![](docs/screenshots/why.png) | ![](docs/screenshots/minutes.png) |
 
-| Open in black & white | Did it work? | Research mode |
+| Open in black & white | Quick search | Links just open |
 |---|---|---|
-| ![](docs/screenshots/open-gray.png) | ![](docs/screenshots/feedback.png) | ![](docs/screenshots/research-google.png) |
+| ![](docs/screenshots/open-gray.png) | ![](docs/screenshots/search.png) | ![](docs/screenshots/follow-link.png) |
+
+| Did it work? | Research mode | Researching |
+|---|---|---|
+| ![](docs/screenshots/feedback.png) | ![](docs/screenshots/research.png) | ![](docs/screenshots/research-google.png) |
 
 | Popup | Stats | Settings |
 |---|---|---|
 | ![](docs/screenshots/popup.png) | ![](docs/screenshots/stats.png) | ![](docs/screenshots/settings.png) |
+
+Made with `tools/media/capture.py` (the real extension, fake sites) and `tools/media/video.py` (slides, voiceover, GIF).
 
 ## Limits
 Chrome doesn't let extensions block `chrome://` pages, so disabling the extension in `chrome://extensions` turns it off.

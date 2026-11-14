@@ -58,8 +58,8 @@ function render() {
         row.className = "site";
         row.innerHTML = `<span class="e"></span><div class="info"><a class="d" href="#"></a><div class="r"></div></div><span class="t"></span><button title="Close it now">Close</button>`;
         row.querySelector(".e").textContent = r.emoji;
-        row.querySelector(".d").textContent = site + (p.linked?.length ? ` + ${p.linked.length} linked` : "");
-        if (p.linked?.length) row.querySelector(".d").title = p.linked.join(", ");
+        row.querySelector(".d").textContent = site + (p.linked?.length ? ` +${p.linked.length}` : "");
+        if (p.linked?.length) row.querySelector(".d").title = `Also open from its links: ${p.linked.join(", ")}`;
         row.querySelector(".r").textContent = (p.pausedAt ? "⏸ paused · " : "") + (p.note || r.label);
         row.querySelector(".t").dataset.until = p.until;
         if (p.pausedAt) row.querySelector(".t").dataset.paused = p.pausedAt;

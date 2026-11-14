@@ -194,9 +194,9 @@ async function schedule(passes, research) {
 }
 
 // ---------- stats ----------
-// stats = { days: { "YYYY-MM-DD": { opens, m, sites: { site: min }, worked: { site: { yes, no } },
+// stats = { days: { "YYYY-MM-DD": { opens, skipped, m, sites: { site: min }, worked: { site: { yes, no } },
 //                      missed: [{ site, note }], research: { m, topics: { topic: min } } } },
-//           total: { opens, m, research } }
+//           total: { opens, skipped, m, research } }
 // (Older days also have reasons: { id: count } and feedback: { reasonId: { yes, no } }.)
 
 async function updateStats(fn, at = Date.now()) {
@@ -346,6 +346,24 @@ function gateOpen({ url, reason, note, minutes }) {
   });
 }
 
+// Closed from the gate without opening it: counted, because it's the point.
+function gateSkip({ url }) {
+  return serial(async () => {
+    const site = W.siteOfUrl(url);
+    if (!site) return { ok: false };
+    const { gates } = await chrome.storage.local.get("gates");
+    if (gates?.[site]) {
+      delete gates[site];
+      await chrome.storage.local.set({ gates });
+    }
+    await updateStats((d, t) => {
+      d.skipped = (d.skipped ?? 0) + 1;
+      t.skipped = (t.skipped ?? 0) + 1;
+    });
+    return { ok: true };
+  });
+}
+
 // "Did you get what you came for?" after a site closes.
 function feedback({ site, got }) {
   return serial(async () => {
@@ -477,6 +495,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   const handlers = {
     "gate:begin": () => gateBegin(msg),
     "gate:open": () => gateOpen(msg),
+    "gate:skip": () => gateSkip(msg),
     "pass:close": () => closeDue({ sites: [msg.site] }),
     "pass:feedback": () => feedback(msg),
     "research:begin": researchBegin,

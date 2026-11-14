@@ -1,7 +1,7 @@
 const W = self.WHY;
 const $ = (id) => document.getElementById(id);
 const DAY = 24 * 60 * 60 * 1000;
-const times = (n) => `opened ${n} time${n === 1 ? "" : "s"}`;
+const times = (n, skipped = 0) => `opened ${n} time${n === 1 ? "" : "s"}${skipped ? ` · ${skipped} skipped 👍` : ""}`;
 
 function list(el, rows, fmt) {
   const max = Math.max(0, ...rows.map((r) => r.v));
@@ -30,11 +30,11 @@ async function render() {
   const sum = (k) => week.reduce((a, d) => a + d[k], 0);
 
   $("today").textContent = W.fmtMin(today.m);
-  $("today-s").textContent = times(today.opens);
+  $("today-s").textContent = times(today.opens, today.skipped);
   $("week").textContent = W.fmtMin(sum("m"));
-  $("week-s").textContent = times(sum("opens"));
+  $("week-s").textContent = times(sum("opens"), week.reduce((a, d) => a + (d.skipped ?? 0), 0));
   $("total").textContent = W.fmtMin(stats?.total?.m ?? 0);
-  $("total-s").textContent = times(stats?.total?.opens ?? 0);
+  $("total-s").textContent = times(stats?.total?.opens ?? 0, stats?.total?.skipped ?? 0);
 
   const rWeek = week.reduce((a, d) => a + (d.research?.m ?? 0), 0);
   $("research").textContent = W.fmtMin(rWeek);
